@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal de Recompensas</title>
+    <style>
+        /* CSS extraído do reword.php.txt */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+      /* Overlay do modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            padding: 20px;
+            /* Oculto por padrão, será mostrado pelo JS */
+            display: none; 
+        }
+
+        /* Container principal do modal */
+        .modal-card {
+            position: relative; /* Adicionado para posicionar o X */
+            height: 100%;
+            width: 100%;
+            max-width: 440px;
+            background: #0f4c3f;
+            border-radius: 13px;
+            color: #fff;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            max-height: 700px;
+        }
+
+        /* Área superior (título + carousel) */
+        .modal-header {
+            padding: 10px 10px 0 10px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Botão X para fechar */
+        .close-x-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 5px;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+
+        .close-x-btn:hover {
+            opacity: 1;
+        }
+
+        .top-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        /* Carousel de recompensas */
+        .rewards-carousel {
+            position: relative;
+            height: 290px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            padding: 2px 0;
+            display: flex; /* Adicionado para centralizar a mensagem */
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .no-rewards-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #ffd36f;
+        }
+
+        .no-rewards-message p {
+            margin: 5px 0;
+        }
+
+        .carousel-track {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .reward-card {
+            position: absolute;
+            width: 280px;
+            background: transparent;
+            border-radius: 9px;
+            padding: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+        
+        .reward-card.center {
+            pointer-events: auto;
+        }
+
+        .reward-card.center {
+            z-index: 3;
+            transform: translateX(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .reward-card.left {
+            z-index: 2;
+            transform: translateX(-120px) scale(0.75);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .reward-card.right {
+            z-index: 2;
+            transform: translateX(120px) scale(0.75);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .reward-card.hidden {
+            opacity: 0;
+            transform: scale(0.5);
+            pointer-events: none;
+        }
+
+        .reward-card.removing {
+            animation: slideOutAndFade 0.5s ease-out forwards;
+        }
+
+        @keyframes slideOutAndFade {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-300px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .reward-subtitle {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffd36f;
+            margin-bottom: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+.chest-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+        .chest-img {
+            width: 260px;
+            height: auto;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .reward-card.center .chest-img {
+            cursor: pointer;
+        }
+        
+        .reward-card:not(.center) .chest-img {
+            cursor: default;
+        }
+        
+        /* Overlay sobre a imagem do baú */
+        .chest-overlay {
+            position: absolute;
+            top: 38%;
+            left: 50%;
+            transform: translate(-45%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .chest-badge {
+            font-weight: 800;
+            margin-bottom: 19px;
+            
+            font-size: 22px;
+            color: #ffd36f;
+        }
+
+        .chest-open {
+            background: rgba(240,194,122,0.0);
+            backdrop-filter: blur(8px);
+            color: #3a2a14;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 5px;
+            border-radius: 2px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            font-size: 8px;
+            letter-spacing: 0.5px;
+            pointer-events: auto;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .chest-open:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(240,194,122,0.6);
+            background: rgba(240,194,122,1);
+        }
+
+        .chest-open:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .reward-card:not(.center) .chest-open {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .chest-meta {
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 0px;
+            font-size: 10px;
+            text-align: center;
+            line-height: 1.5;
+            
+            position: absolute;
+            top: 68%;
+            left: 50%;
+            transform: translate(-45%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+            pointer-events: none;
+            
+        }
+        
+        .chest-timer {
+            display: flex;
+            margin-top: 2px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffd36f;
+            text-align: center;
+            padding: 6px 12px;
+            
+            position: absolute;
+            
+            top: 75%;
+            left:50%;
+            transform: translate(-47%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+            pointer-events: none;
+            
+            
+        }
+        
+        .chest-timer.warning {
+            color: #ff9800;
+            border-color: rgba(255,152,0,0.0);
+            background: rgba(255,152,0,0.0);
+            animation: pulse-warning 2s infinite;
+        }
+        
+        .chest-timer.critical {
+            color: #f44336;
+            border-color: rgba(244,67,54,0.0);
+            background: rgba(244,67,54,0.0);
+            animation: pulse-critical 1s infinite;
+        }
+        
+        @keyframes pulse-warning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes pulse-critical {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.97); }
+        }
+        
+        .timer-icon {
+            font-size: 12px;
+        }
+
+        /* Navegação do carousel */
+        .carousel-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .carousel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .carousel-dot.active {
+            background: #ffd36f;
+            width: 30px;
+            border-radius: 5px;
+        }
+
+        /* Área scrollável do histórico */
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 10px 10px 10px;
+            min-height: 0;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .history-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffd36f;
+        }
+
+        .history-title .right {
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .history-title .right:hover {
+            color: #ffd36f;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 10px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .history-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+
+
+        .history-item .icon {
+            /* font-size: 18px; Removido, pois agora é uma imagem */
+            margin-right: 10px;
+            flex-shrink: 0;
+            display: flex; /* Para centralizar a imagem se necessário */
+            align-items: center;
+            justify-content: center;
+            height: 20px;/* Altura do ícone original */
+            width:20px;
+        }
+        
+        .history-chest-img {
+            width: 100%; /* Preenche o container .icon */
+            height: auto;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .history-item .main {
+            flex-grow: 1;
+        }
+
+        .history-item .title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #fff;
+        }
+
+        .history-item .meta {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .history-item .right {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .history-item .amount {
+            font-weight: 700;
+            font-size: 15px;
+            color: #ffd36f;
+        }
+
+        .history-item .status {
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Área inferior (checkbox + botão fechar) */
+        .modal-footer {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #d6e7df;
+            font-size: 10px;
+            cursor: pointer;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .checkbox-label input {
+            width: 16px;
+            height: 16px;
+            accent-color: #ffd36f;
+        }
+
+        .close-btn {
+            background: #ffd36f;
+            color: #3a2a14;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .close-btn:hover {
+            background: #ffc733;
+        }
+        
+        /* Botão flutuante para abrir o modal (apenas para demonstração) */
+        .open-modal-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0f4c3f;
+            color: #fff;
+            border: none;
+            padding: 10px 10px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 99998;
+            margin-bottom: 60px;
+        }
+    /* ============================================ */
+    /* ============================================ */
+    
+/*ANIMAÇÃO DE PULSE DO BAÚ */
+/* ============================================ */
+
+@keyframes chestPulse {
+    0%   { width: 260px; }
+    50%  { width: 260px; }
+    100% { width: 260px; }
+}
+
+/* Oculta a imagem do baú aberto por padrão */
+.chest-img.open {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    /* Garante que a imagem aberta não cause o efeito de "chegar para frente" */
+    transform: translate(0, 0) scale(1); 
+}
+
+/* Removido transform/animation que empurrava o baú pra frente */
+.chest-img {
+    transition: opacity 0.3s ease;
+    /* Garante que a imagem fechada não cause o efeito de "chegar para frente" */
+    transform: translate(0, 0) scale(1); 
+}
+
+/* Quando o baú abre — fecha some */
+.chest-wrap.is-open .chest-img.closed {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+/* Baú aberto aparece */
+.chest-wrap.is-open .chest-img.open {
+    opacity: 1 !important;
+    pointer-events: auto;
+    /* Removido transform: scale(1) e transform-origin: center para evitar conflitos */
+}
+
+/* Some o overlay após abrir */
+.chest-wrap.is-open .chest-overlay {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+    
+    
+/* /* ============================================ */
+/* 
+	</style>
+</head>
+<body>
+
+    <!-- Botão para abrir o modal (Apenas para demonstração) -->
+<button class="open-modal-btn" id="openModalBtn"></button>
+
+    <!-- Estrutura do Modal -->
+    <div class="modal-overlay" id="rewardsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <button class="close-x-btn" id="closeXBtn">×</button>
+                <div class="top-title" id="modalTitle"></div>
+                
+                <!-- Carousel de Recompensas -->
+                <div class="rewards-carousel">
+                    <div class="carousel-track" id="carouselTrack">
+                        <!-- Recompensas serão injetadas aqui pelo JavaScript -->
+                    </div>
+                    <!-- Mensagem de Sem Recompensas -->
+                    <div class="no-rewards-message" id="noRewardsMessage" style="display: none;">
+                        <p>🎉 Parabéns! Você resgatou todas as recompensas disponíveis por enquanto.</p>
+                    </div>
+                </div>
+                
+                <!-- Navegação do Carousel (Dots) -->
+                <div class="carousel-nav" id="carouselNav">
+                    <!-- Dots serão injetados aqui pelo JavaScript -->
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <div class="history-title">
+                    <div class="left" id="historyTitle"></div>
+                    <div class="right" id="moreHistoryLink"></div>
+                </div>
+                
+                <!-- Lista de Histórico -->
+                <div class="history-list" id="historyList">
+                    <!-- Histórico será injetado aqui pelo JavaScript -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="dontShowTodayCheckbox">
+                    <span id="dontShowTodayText"></span>
+                </label>
+                <button class="close-btn" id="closeModalBtn"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inclui o arquivo JavaScript separado -->
+    <script src="rewards.js"></script>
+</body>
+</html>
+>
+</body>
+</html>
