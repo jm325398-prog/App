@@ -3,7 +3,7 @@
 // ============================================
 
 const CONFIG = {
-    API_URL: 'https://reword.great-site.net/index.php',
+    API_URL: 'app/v2/recompensa/api.php',
     MIN_SWIPE: 50,
     CARD_REMOVE_DELAY: 4000,
     ANIMATION_DELAY: 500
@@ -225,7 +225,7 @@ class HistoryManager {
     createItemHtml(item, isNew = false) {
         return `
             <div class="history-item ${isNew ? 'new' : ''}">
-                <div class="icon"><img src="img/bau-aberto.png" class="history-chest-img"></div>
+                <div class="icon"><img src="app/v2/img/bau-aberto.png" class="history-chest-img"></div>
                 <div class="main">
                     <div class="title">${item.title}</div>
                     <div class="meta">${item.source} - ${item.date}</div>
@@ -459,11 +459,5 @@ class RewardsModal {
 
 const modal = new RewardsModal();
 modal.initialize();
-
-
-e();
-
-
-ize();
 
 
