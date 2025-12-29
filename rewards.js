@@ -3,7 +3,7 @@
 // ============================================
 
 const CONFIG = {
-    API_URL: 'reward_system.js',
+    API_URL: 'https://api-reword.wuaze.com/api.php',
     MIN_SWIPE: 50,
     CARD_REMOVE_DELAY: 4000,
     ANIMATION_DELAY: 500
