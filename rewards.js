@@ -3,7 +3,7 @@
 // ============================================
 
 const CONFIG = {
-    API_URL: 'app/v2/recompensa/api.php',
+    API_URL: 'https://reword.great-site.net/index.php',
     MIN_SWIPE: 50,
     CARD_REMOVE_DELAY: 4000,
     ANIMATION_DELAY: 500
